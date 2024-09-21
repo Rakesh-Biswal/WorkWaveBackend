@@ -16,9 +16,18 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
+const corsOptions = {
+    origin: [
+      'http://127.0.0.1:5500/WorkerReg.html',
+      'https://work-wave-backend.onrender.com',
+    ],
+    optionsSuccessStatus: 200,
+    credentials: true,
+  };
+
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize Firebase Admin SDK
