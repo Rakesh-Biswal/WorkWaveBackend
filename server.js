@@ -1,89 +1,163 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+
 const dotenv = require('dotenv');
 const multer = require('multer');
 const path = require('path');
-
-// Firebase Admin SDK
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
+const twilio = require('twilio');
 
-// Load environment variables from .env file
 dotenv.config();
 
-// Initialize Express app
 const app = express();
 
 // Middleware
 app.use(cors({
-    origin: '*' // Replace with your frontend URL
+    origin: '*'
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize Firebase Admin SDK
-const serviceAccount = require('./firebaseServiceAccount.json');
+let bucket;
+try {
+    const serviceAccount = require('./firebaseServiceAccount.json');
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET, // e.g., your-project-id.appspot.com
-});
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    });
 
-// Get a reference to Firebase Storage
-const bucket = admin.storage().bucket();
+    bucket = admin.storage().bucket();
 
-// Connect to MongoDB
+    console.log('✅ Firebase Initialized');
+    
+} catch (err) {
+    console.error('❌ Firebase Initialization Error:', err);
+    process.exit(1);
+}
+
+
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 })
-.then(() => console.log('✅ MongoDB Connected'))
-.catch(err => {
-    console.error('❌ MongoDB Connection Error:', err);
-    process.exit(1);
-});
+    .then(() => console.log('✅ MongoDB Connected'))
+    .catch(err => {
+        console.error('❌ MongoDB Connection Error:', err);
+        process.exit(1);
+    });
 
-// Import Worker Model
+
 const Worker = require('./models/Worker');
 
-// Configure Multer for handling multipart/form-data (for file uploads)
-const storage = multer.memoryStorage(); // Store files in memory buffer
-const upload = multer({ 
+
+const otpStore = {};
+
+
+const storage = multer.memoryStorage();
+const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: function(req, file, cb) {
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: function (req, file, cb) {
         const filetypes = /jpeg|jpg|png/;
         const mimetype = filetypes.test(file.mimetype);
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        if(mimetype && extname){
+        if (mimetype && extname) {
             return cb(null, true);
         }
         cb(new Error('Only JPEG, JPG, and PNG images are allowed!'));
     }
 });
 
+
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+
+function formatPhoneNumber(phone) {
+
+    if (!phone.startsWith('+')) {
+        return '+91' + phone;
+    }
+    return phone;
+}
+
+
+app.post('/api/workers/generate-otp', async (req, res) => {
+    const { phone } = req.body;
+
+    if (!phone) {
+        console.log('❌ OTP Generation Failed: Phone number is missing.');
+        return res.status(400).json({ message: 'Phone number is required.' });
+    }
+
+    const formattedPhone = formatPhoneNumber(phone);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit OTP
+
+
+    otpStore[formattedPhone] = otp;
+    console.log(`✅ Generated OTP for ${formattedPhone}: ${otp}`);
+
+
+    try {
+        await twilioClient.messages.create({
+            to: formattedPhone,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            body: `Your OTP for Rakesh Pvt LTD is: ${otp}`
+        });
+        console.log(`✅ OTP sent to ${formattedPhone}`);
+        res.status(200).json({ message: 'OTP sent successfully.' });
+    } catch (error) {
+        console.error('❌ Twilio Error:', error);
+        res.status(500).json({ message: 'Failed to send OTP.' });
+    }
+});
+
+
+app.post('/api/workers/verify-otp', async (req, res) => {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+        console.log('❌ OTP Verification Failed: Phone number or OTP is missing.');
+        return res.status(400).json({ message: 'Phone number and OTP are required.' });
+    }
+
+    const formattedPhone = formatPhoneNumber(phone);
+    const storedOtp = otpStore[formattedPhone];
+    console.log(`🔍 Verifying OTP for ${formattedPhone}. Stored OTP: ${storedOtp}, Provided OTP: ${otp}`);
+
+    if (storedOtp && storedOtp === otp) {
+        delete otpStore[formattedPhone];
+        console.log(`✅ OTP verified successfully for ${formattedPhone}`);
+        return res.status(200).json({ message: 'OTP verified successfully.' });
+    } else {
+        console.log(`❌ OTP Verification Failed for ${formattedPhone}: Invalid OTP.`);
+        return res.status(400).json({ message: 'Invalid OTP.' });
+    }
+});
+
 // API Route: Register a New Worker
 app.post('/api/workers', upload.single('photo'), async (req, res) => {
     try {
-        // Validate required fields
         const { name, phone, email, profession, experience, location } = req.body;
         if (!name || !phone || !email || !profession || !experience || !location) {
+            console.log('❌ Registration Failed: Missing required fields.');
             return res.status(400).json({ message: 'All fields are required.' });
         }
 
-        // Check if email already exists
+        const formattedPhone = formatPhoneNumber(phone);
+
         const existingWorker = await Worker.findOne({ email });
         if (existingWorker) {
+            console.log('❌ Registration Failed: Email already registered.');
             return res.status(400).json({ message: 'Email is already registered.' });
         }
 
-        // Handle Image Upload to Firebase Storage
         let photoURL = '';
         if (req.file) {
-            const fileName = `worker_photos/${uuidv4()}_${req.file.originalname}`;
-            const file = bucket.file(fileName);
+            const uniqueFileName = `worker_photos/${uuidv4()}_${path.basename(req.file.originalname)}`;
+            const file = bucket.file(uniqueFileName);
 
             const stream = file.createWriteStream({
                 metadata: {
@@ -97,39 +171,87 @@ app.post('/api/workers', upload.single('photo'), async (req, res) => {
             });
 
             stream.on('finish', async () => {
-                // Make the file public (optional, depending on your use case)
-                await file.makePublic();
-                photoURL = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+                try {
+                    await file.makePublic();
+                    photoURL = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+                    console.log(`✅ Image uploaded to Firebase Storage: ${photoURL}`);
 
-                // Create and save the worker
-                const newWorker = new Worker({
-                    name,
-                    phone,
-                    email,
-                    photoURL,
-                    profession,
-                    experience,
-                    location,
-                });
+                    const newWorker = new Worker({
+                        name,
+                        phone: formattedPhone,
+                        email,
+                        photoURL,
+                        profession,
+                        experience,
+                        location,
+                    });
 
-                await newWorker.save();
-                res.status(201).json({ message: 'Worker registered successfully.' });
+                    await newWorker.save();
+                    console.log(`✅ Worker registered successfully: ${email}`);
+                    res.status(201).json({ message: 'Worker registered successfully.' });
+                } catch (err) {
+                    console.error('❌ Firebase Post-Upload Error:', err);
+                    res.status(500).json({ message: 'Failed to finalize image upload.' });
+                }
             });
 
             stream.end(req.file.buffer);
         } else {
+            console.log('❌ Registration Failed: Worker photo is missing.');
             return res.status(400).json({ message: 'Worker photo is required.' });
         }
 
     } catch (error) {
-        console.error('❌ Server Error:', error);
+        console.error('❌ Server Error during Registration:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 });
 
 
+// New route to fetch professions of workers
+app.get('/api/workers/professions', async (req, res) => {
+    try {
+        // Fetch all workers and return only the profession field
+        const workers = await Worker.find({}, 'profession');
+
+        // Extract professions and flatten into a single array, splitting by commas
+        const professions = workers
+            .map(worker => worker.profession)
+            .join(',')
+            .split(',')
+            .map(prof => prof.trim())
+            .filter(prof => prof.length > 0);
+
+        // Remove duplicates
+        const uniqueProfessions = [...new Set(professions)];
+
+        res.status(200).json({ professions: uniqueProfessions });
+    } catch (error) {
+        console.error('❌ Failed to fetch professions:', error);
+        res.status(500).json({ message: 'Failed to retrieve professions.' });
+    }
+});
+
+
+
+app.get('/api/workers/profession/:profession', async (req, res) => {
+    const { profession } = req.params;
+
+    try {
+        const workers = await Worker.find({
+            profession: { $regex: new RegExp(profession, 'i') }  // Case-insensitive regex match
+        });
+        res.status(200).json(workers);
+    } catch (error) {
+        console.error('❌ Error fetching workers by profession:', error);
+        res.status(500).json({ message: 'Failed to fetch workers.' });
+    }
+});
+
+
+
 // Start the Server
-const PORT = process.env.PORT || 5500;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
