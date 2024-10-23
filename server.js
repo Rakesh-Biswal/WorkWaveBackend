@@ -22,21 +22,33 @@ app.use(express.urlencoded({ extended: true }));
 
 let bucket;
 try {
-    const serviceAccount = require('./firebaseServiceAccount.json');
+    const admin = require('firebase-admin');
 
     admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
+        credential: admin.credential.cert({
+            "type": process.env.FIREBASE_TYPE,
+            "project_id": process.env.FIREBASE_PROJECT_ID,
+            "private_key_id": process.env.FIREBASE_PRIVATE_KEY_ID,
+            "private_key": process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Properly handle the newlines
+            "client_email": process.env.FIREBASE_CLIENT_EMAIL,
+            "client_id": process.env.FIREBASE_CLIENT_ID,
+            "auth_uri": process.env.FIREBASE_AUTH_URI,
+            "token_uri": process.env.FIREBASE_TOKEN_URI,
+            "auth_provider_x509_cert_url": process.env.FIREBASE_AUTH_PROVIDER_CERT,
+            "client_x509_cert_url": process.env.FIREBASE_CLIENT_CERT_URL
+        }),
         storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
 
     bucket = admin.storage().bucket();
-
+    
     console.log('✅ Firebase Initialized');
     
 } catch (err) {
     console.error('❌ Firebase Initialization Error:', err);
     process.exit(1);
 }
+
 
 
 mongoose.connect(process.env.MONGO_URI, {
