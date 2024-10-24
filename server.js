@@ -254,7 +254,7 @@ app.get('/api/workers/profession/:profession', async (req, res) => {
             profession: { $regex: new RegExp(profession, 'i') }  // Case-insensitive regex match
         });
         res.status(200).json(workers);
-        return res.json({ message: 'Worker Found Successfully', workerID : worker._id });
+        return res.json({ message: 'Worker Found Successfully', workerID : workers._id });
     } catch (error) {
         console.error('❌ Error fetching workers by profession:', error);
         res.status(500).json({ message: 'Failed to fetch workers.' });
