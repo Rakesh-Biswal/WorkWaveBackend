@@ -43,7 +43,7 @@ try {
     bucket = admin.storage().bucket();
 
     console.log('✅ Firebase Initialized');
-    
+
 } catch (err) {
     console.error('❌ Firebase Initialization Error:', err);
     process.exit(1);
@@ -94,6 +94,31 @@ function formatPhoneNumber(phone) {
     }
     return phone;
 }
+
+
+app.post('/api/workers/signin', async (req, res) => {
+    const { email, mobile } = req.body;
+
+    try {
+        let worker;
+        if (email) {
+            worker = await Worker.findOne({ email });
+        } else if (mobile) {
+            const formattedPhone = formatPhoneNumber(mobile);
+            worker = await Worker.findOne({ phone: formattedPhone });
+        }
+
+        if (worker) {
+            return res.status(200).json({ workerId: worker._id });
+        } else {
+            return res.status(404).json({ message: 'Worker not found.' });
+        }
+    } catch (error) {
+        console.error('Error verifying worker:', error);
+        res.status(500).json({ message: 'Server error during sign-in.' });
+    }
+});
+
 
 
 app.post('/api/workers/generate-otp', async (req, res) => {
@@ -268,7 +293,7 @@ app.get('/api/workers/:workerId', async (req, res) => {
     try {
         // Find worker by ID
         const worker = await Worker.findById(workerId);
-        
+
         if (!worker) {
             return res.status(404).json({ message: 'Worker not found' });
         }
