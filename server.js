@@ -13,8 +13,6 @@ const WebSocket = require('ws');
 dotenv.config();
 
 const app = express();
-const server = require('http').createServer(app);
-const wss = new WebSocket.Server({ server });
 
 // Middleware
 app.use(cors({
@@ -101,36 +99,31 @@ function formatPhoneNumber(phone) {
 }
 
 
-const workerLocations = {}; // Store worker locations by ID
+// WebSocket Server
+const server = app.listen(process.env.WEBSOCKET_PORT || 4000, () => {
+    console.log(`🚀 WebSocket server running on port ${process.env.WEBSOCKET_PORT || 4000}`);
+});
+
+const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws) => {
-    ws.on('message', (message) => {
-        const data = JSON.parse(message);
-        if (data.type === 'updateLocation') {
-            const { workerId, location } = data;
-            workerLocations[workerId] = location; // Store the latest location
+    console.log('🟢 New WebSocket connection established');
 
-            // Schedule an hourly update to the database
-            setTimeout(() => {
-                updateWorkerLocationInDatabase(workerId, location);
-            }, 7000); // 1 hour in milliseconds
-        }
+    ws.on('message', async (message) => {
+        const { workerId, location } = JSON.parse(message);
+        console.log(`Received location from worker ${workerId}: ${location}`);
+
+        // Update the worker's location in the database every hour
+        await Worker.findByIdAndUpdate(workerId, { location });
+
+        // Respond back to the client
+        ws.send(JSON.stringify({ status: 'Location updated', workerId, location }));
     });
 
     ws.on('close', () => {
-        console.log('WebSocket connection closed');
+        console.log('🔴 WebSocket connection closed');
     });
 });
-
-// Function to update worker location in the database
-async function updateWorkerLocationInDatabase(workerId, location) {
-    try {
-        await Worker.findByIdAndUpdate(workerId, { location }, { new: true });
-        console.log(`✅ Updated location for worker ${workerId}:`, location);
-    } catch (error) {
-        console.error(`❌ Failed to update location for worker ${workerId}:`, error);
-    }
-}
 
 
 
