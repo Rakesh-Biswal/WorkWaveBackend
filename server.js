@@ -8,7 +8,6 @@ const path = require('path');
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
 const twilio = require('twilio');
-const WebSocket = require('ws');
 
 dotenv.config();
 
@@ -16,9 +15,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: '*'
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -97,35 +94,6 @@ function formatPhoneNumber(phone) {
     }
     return phone;
 }
-
-
-// WebSocket Server
-const server = app.listen(process.env.WEBSOCKET_PORT || 4000, () => {
-    console.log(`🚀 WebSocket server running on port ${process.env.WEBSOCKET_PORT || 4000}`);
-});
-
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-    console.log('🟢 New WebSocket connection established');
-
-    ws.on('message', async (message) => {
-        const { workerId, location } = JSON.parse(message);
-        console.log(`Received location from worker ${workerId}: ${location}`);
-
-        // Update the worker's location in the database every hour
-        await Worker.findByIdAndUpdate(workerId, { location });
-
-        // Respond back to the client
-        ws.send(JSON.stringify({ status: 'Location updated', workerId, location }));
-    });
-
-    ws.on('close', () => {
-        console.log('🔴 WebSocket connection closed');
-    });
-});
-
-
 
 
 app.post('/api/workers/signin', async (req, res) => {
