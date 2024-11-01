@@ -8,10 +8,13 @@ const path = require('path');
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
 const twilio = require('twilio');
+const WebSocket = require('ws');
 
 dotenv.config();
 
 const app = express();
+const server = require('http').createServer(app);
+const wss = new WebSocket.Server({ server });
 
 // Middleware
 app.use(cors({
@@ -94,6 +97,40 @@ function formatPhoneNumber(phone) {
     }
     return phone;
 }
+
+
+const workerLocations = {}; // Store worker locations by ID
+
+wss.on('connection', (ws) => {
+    ws.on('message', (message) => {
+        const data = JSON.parse(message);
+        if (data.type === 'updateLocation') {
+            const { workerId, location } = data;
+            workerLocations[workerId] = location; // Store the latest location
+
+            // Schedule an hourly update to the database
+            setTimeout(() => {
+                updateWorkerLocationInDatabase(workerId, location);
+            }, 3600000); // 1 hour in milliseconds
+        }
+    });
+
+    ws.on('close', () => {
+        console.log('WebSocket connection closed');
+    });
+});
+
+// Function to update worker location in the database
+async function updateWorkerLocationInDatabase(workerId, location) {
+    try {
+        await Worker.findByIdAndUpdate(workerId, { location }, { new: true });
+        console.log(`✅ Updated location for worker ${workerId}:`, location);
+    } catch (error) {
+        console.error(`❌ Failed to update location for worker ${workerId}:`, error);
+    }
+}
+
+
 
 
 app.post('/api/workers/signin', async (req, res) => {
