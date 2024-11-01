@@ -111,7 +111,7 @@ wss.on('connection', (ws) => {
             // Schedule an hourly update to the database
             setTimeout(() => {
                 updateWorkerLocationInDatabase(workerId, location);
-            }, 3600000); // 1 hour in milliseconds
+            }, 7000); // 1 hour in milliseconds
         }
     });
 
