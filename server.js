@@ -18,7 +18,9 @@ const wss = new WebSocket.Server({ server });
 
 // Middleware
 app.use(cors({
-    origin: '*'
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
