@@ -119,6 +119,21 @@ app.post('/api/workers/signin', async (req, res) => {
     }
 });
 
+// Endpoint to get worker details by ID
+app.get('/api/workers/:workerId', async (req, res) => {
+    try {
+        const workerId = req.params.workerId;
+        const worker = await Worker.findById(workerId); // Adjust based on your model
+        if (!worker) {
+            return res.status(404).json({ message: 'Worker not found' });
+        }
+        res.json(worker);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 
 
 app.post('/api/workers/generate-otp', async (req, res) => {
