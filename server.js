@@ -25,7 +25,7 @@ try {
     const admin = require('firebase-admin');
 
     admin.initializeApp({
-        
+
         credential: admin.credential.cert({
             type: process.env.FIREBASE_TYPE,
             project_id: process.env.FIREBASE_PROJECT_ID,
@@ -117,21 +117,6 @@ app.post('/api/workers/signin', async (req, res) => {
     } catch (error) {
         console.error('Error verifying worker:', error);
         res.status(500).json({ message: 'Server error during sign-in.' });
-    }
-});
-
-// Endpoint to get worker details by ID
-app.get('/api/workers/:workerId', async (req, res) => {
-    try {
-        const workerId = req.params.workerId;
-        const worker = await Worker.findById(workerId); // Adjust based on your model
-        if (!worker) {
-            return res.status(404).json({ message: 'Worker not found' });
-        }
-        res.json(worker);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
     }
 });
 
