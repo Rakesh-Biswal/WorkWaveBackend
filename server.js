@@ -121,18 +121,24 @@ app.post('/api/workers/signin', async (req, res) => {
 });
 
 
+// Example backend route in Express (app.js or worker routes file)
 app.put('/api/workers/:workerId/status', async (req, res) => {
     const { workerId } = req.params;
     const { status } = req.body;
+    console.log(`Received status update for worker ${workerId}: ${status}`);
 
     try {
         const worker = await Worker.findByIdAndUpdate(workerId, { status }, { new: true });
-        if (!worker) return res.status(404).send('Worker not found');
-        res.send(worker);
+        if (!worker) {
+            return res.status(404).json({ message: 'Worker not found' });
+        }
+        res.json(worker);
     } catch (error) {
-        res.status(500).send('Error updating worker status');
+        console.error('Error updating worker status:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 
 
