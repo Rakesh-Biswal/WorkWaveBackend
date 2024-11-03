@@ -12,6 +12,7 @@ const twilio = require('twilio');
 dotenv.config();
 
 const app = express();
+const router = express.Router();
 
 // Middleware
 app.use(cors({
@@ -121,21 +122,18 @@ app.post('/api/workers/signin', async (req, res) => {
 });
 
 
-// Example backend route in Express (app.js or worker routes file)
-app.post('/api/workers/:workerId/status', async (req, res) => {
+app.put('/api/workers/update-status/:workerId', async (req, res) => {
     const { workerId } = req.params;
     const { status } = req.body;
-    console.log(`Received status update for worker ${workerId}: ${status}`);
 
     try {
         const worker = await Worker.findByIdAndUpdate(workerId, { status }, { new: true });
         if (!worker) {
             return res.status(404).json({ message: 'Worker not found' });
         }
-        res.json(worker);
+        res.json({ message: 'Status updated successfully', worker });
     } catch (error) {
-        console.error('Error updating worker status:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Error updating status', error });
     }
 });
 
