@@ -10,7 +10,7 @@ const workerSchema = new mongoose.Schema({
     profession: { type: String, required: true },
     experience: { type: Number, required: true },
     location: { type: String, required: true },
-    status: { type: String, enum: ['Active', 'Busy'], default: 'Active' } // New status field
+    status: { type: String, default: "Active" }, // Add this field
 }, { timestamps: true });
 
 module.exports = mongoose.model('Worker', workerSchema);
