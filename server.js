@@ -121,6 +121,20 @@ app.post('/api/workers/signin', async (req, res) => {
 });
 
 
+app.put('/api/workers/:workerId/status', async (req, res) => {
+    const { workerId } = req.params;
+    const { status } = req.body;
+
+    try {
+        const worker = await Worker.findByIdAndUpdate(workerId, { status }, { new: true });
+        if (!worker) return res.status(404).send('Worker not found');
+        res.send(worker);
+    } catch (error) {
+        res.status(500).send('Error updating worker status');
+    }
+});
+
+
 
 app.post('/api/workers/generate-otp', async (req, res) => {
     const { phone } = req.body;
