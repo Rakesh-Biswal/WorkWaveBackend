@@ -122,7 +122,7 @@ app.post('/api/workers/signin', async (req, res) => {
 
 
 // Example backend route in Express (app.js or worker routes file)
-app.put('/api/workers/:workerId/status', async (req, res) => {
+app.post('/api/workers/:workerId/status', async (req, res) => {
     const { workerId } = req.params;
     const { status } = req.body;
     console.log(`Received status update for worker ${workerId}: ${status}`);
