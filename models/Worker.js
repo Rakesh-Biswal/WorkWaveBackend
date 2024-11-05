@@ -9,7 +9,7 @@ const workerSchema = new mongoose.Schema({
     photoURL: { type: String, required: true }, // URL of the uploaded photo in Firebase Storage
     profession: { type: String, required: true },
     experience: { type: Number, required: true },
-    location: { type: String, required: true },
+    location: { type: String, default: "Location not set" },
     status: { type: String, enum: ['Active', 'Busy'], default: 'Active' }, // New status field
 }, { timestamps: true });
 

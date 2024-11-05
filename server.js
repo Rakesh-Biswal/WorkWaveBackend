@@ -138,6 +138,23 @@ app.put('/api/workers/update-status/:workerId', async (req, res) => {
 });
 
 
+app.put('/api/workers/update-location/:workerId', async (req, res) => {
+    const { workerId } = req.params;
+    const { location } = req.body;
+
+    try {
+        const worker = await Worker.findByIdAndUpdate(workerId, { location }, { new: true });
+        if (!worker) {
+            return res.status(404).json({ message: 'Worker not found' });
+        }
+        res.json({ message: 'Location updated successfully', worker });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating location', error });
+    }
+});
+
+
+
 
 
 app.post('/api/workers/generate-otp', async (req, res) => {
