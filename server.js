@@ -138,7 +138,7 @@ app.put('/api/workers/update-status/:workerId', async (req, res) => {
 });
 
 
-router.put('/api/workers/update-location/:workerId', async (req, res) => {
+app.put('/api/workers/update-location/:workerId', async (req, res) => {
     const { workerId } = req.params;
     const { location } = req.body; // Expecting a string location in the request body
 
