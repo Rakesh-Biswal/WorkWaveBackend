@@ -141,11 +141,11 @@ app.put('/api/workers/update-status/:workerId', async (req, res) => {
 // Update worker's location
 app.put('/api/workers/update-location/:workerId', async (req, res) => {
     const { workerId } = req.params;
-    const { location } = req.body;
+    const { location, latitude, longitude } = req.body;
 
     try {
         // Update worker's location by ID
-        const worker = await Worker.findByIdAndUpdate(workerId, { location }, { new: true });
+        const worker = await Worker.findByIdAndUpdate(workerId, { location, latitude, longitude }, { new: true });
         
         if (!worker) {
             return res.status(404).json({ message: 'Worker not found' });

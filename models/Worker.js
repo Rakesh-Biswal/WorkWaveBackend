@@ -10,6 +10,8 @@ const workerSchema = new mongoose.Schema({
     profession: { type: String, required: true },
     experience: { type: Number, required: true },
     location: { type: String,},
+    latitude: { type: Number }, // New field for latitude
+    longitude: { type: Number }, // New field for longitude
     status: { type: String, enum: ['Active', 'Busy'], default: 'Active' }, // New status field
 }, { timestamps: true });
 
