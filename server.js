@@ -218,8 +218,8 @@ app.post('/api/workers/verify-otp', async (req, res) => {
 // API Route: Register a New Worker
 app.post('/api/workers', upload.single('photo'), async (req, res) => {
     try {
-        const { name, phone, email, profession, experience, location } = req.body;
-        if (!name || !phone || !email || !profession || !experience) {
+        const { name, phone, email, profession, experience, location, latitude, longitude } = req.body;
+        if (!name || !phone || !email || !profession || !experience || !latitude || !longitude) {
             console.log('❌ Registration Failed: Missing required fields.');
             return res.status(400).json({ message: 'All fields are required.' });
         }
@@ -254,6 +254,7 @@ app.post('/api/workers', upload.single('photo'), async (req, res) => {
                     photoURL = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
                     console.log(`✅ Image uploaded to Firebase Storage: ${photoURL}`);
 
+                    // Create the worker with latitude and longitude
                     const newWorker = new Worker({
                         name,
                         phone: formattedPhone,
@@ -262,6 +263,8 @@ app.post('/api/workers', upload.single('photo'), async (req, res) => {
                         profession,
                         experience,
                         location,
+                        latitude,   // Include latitude in the worker object
+                        longitude,  // Include longitude in the worker object
                     });
 
                     await newWorker.save();
@@ -284,6 +287,7 @@ app.post('/api/workers', upload.single('photo'), async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 });
+
 
 
 // New route to fetch professions of workers
