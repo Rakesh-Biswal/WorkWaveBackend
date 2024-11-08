@@ -219,7 +219,7 @@ app.post('/api/workers/verify-otp', async (req, res) => {
 app.post('/api/workers', upload.single('photo'), async (req, res) => {
     try {
         const { name, phone, email, profession, experience, location } = req.body;
-        if (!name || !phone || !email || !profession || !experience || !location) {
+        if (!name || !phone || !email || !profession || !experience) {
             console.log('❌ Registration Failed: Missing required fields.');
             return res.status(400).json({ message: 'All fields are required.' });
         }
