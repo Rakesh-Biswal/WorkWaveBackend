@@ -13,6 +13,7 @@ const workerSchema = new mongoose.Schema({
     latitude: { type: Number }, // New field for latitude
     longitude: { type: Number }, // New field for longitude
     status: { type: String, enum: ['Active', 'Busy'], default: 'Active' }, // New status field
+    clicked: {type: Number,default: 0 }
 }, { timestamps: true });
 
 workerSchema.index({ profession: 1 });

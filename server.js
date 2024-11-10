@@ -323,6 +323,23 @@ app.get('/api/workers/profession/:profession', async (req, res) => {
     }
 });
 
+app.post('/api/workers/:workerId/incrementCallCounter', async (req, res) => {
+    try {
+        const { workerId } = req.params;
+        const worker = await Worker.findById(workerId);
+        if (!worker) {
+            return res.status(404).json({ message: 'Worker not found' });
+        }
+
+        worker.clicked = (worker.clicked || 0) + 1; // Initialize if `clicked` is undefined
+        await worker.save();
+
+        res.status(200).json({ message: 'Call counter incremented' });
+    } catch (error) {
+        res.status(500).json({ error: 'An error occurred while incrementing the call counter' });
+    }
+});
+
 
 // Get worker details by ID
 app.get('/api/workers/:workerId', async (req, res) => {
