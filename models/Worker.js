@@ -15,4 +15,9 @@ const workerSchema = new mongoose.Schema({
     status: { type: String, enum: ['Active', 'Busy'], default: 'Active' }, // New status field
 }, { timestamps: true });
 
+workerSchema.index({ profession: 1 });
+workerSchema.index({ email: 1 });
+workerSchema.index({ location: "2dsphere" });
+
+
 module.exports = mongoose.model('Worker', workerSchema);
