@@ -293,26 +293,19 @@ app.post('/api/workers', upload.single('photo'), async (req, res) => {
 // New route to fetch professions of workers
 app.get('/api/workers/professions', async (req, res) => {
     try {
-        // Fetch all workers and return only the profession field
-        const workers = await Worker.find({}, 'profession');
+        const professions = await Worker.aggregate([
+            { $group: { _id: "$profession" } },  // Group by the profession field
+            { $project: { _id: 0, profession: "$_id" } }, // Project the result to only include profession
+        ]);
 
-        // Extract professions and flatten into a single array, splitting by commas
-        const professions = workers
-            .map(worker => worker.profession)
-            .join(',')
-            .split(',')
-            .map(prof => prof.trim())
-            .filter(prof => prof.length > 0);
-
-        // Remove duplicates
-        const uniqueProfessions = [...new Set(professions)];
-
+        const uniqueProfessions = professions.map(prof => prof.profession);
         res.status(200).json({ professions: uniqueProfessions });
     } catch (error) {
         console.error('❌ Failed to fetch professions:', error);
         res.status(500).json({ message: 'Failed to retrieve professions.' });
     }
 });
+
 
 
 
