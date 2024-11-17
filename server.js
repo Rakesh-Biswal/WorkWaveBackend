@@ -101,6 +101,12 @@ function formatPhoneNumber(phone) {
 }
 
 
+app.get('/api/ping', (req, res) => {
+    res.status(200).send('Server is up and running');
+});
+
+
+
 app.post('/api/workers/signin', async (req, res) => {
     const { email, mobile } = req.body;
 
