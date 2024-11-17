@@ -17,9 +17,7 @@ const router = express.Router();
 // Middleware
 app.use(cors({
     origin: ['https://workwav.vercel.app'], // Add allowed origins here
-    methods: ['GET', 'POST'], // Optional: restrict methods
-    allowedHeaders: ['Content-Type', 'Authorization'], // Optional: restrict headers
-    credentials: true // Allow
+    credentials:true, 
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
