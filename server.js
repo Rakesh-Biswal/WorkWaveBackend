@@ -339,6 +339,9 @@ app.post('/api/workers/:workerId/incrementCallCounter', async (req, res) => {
         }
 
         worker.clicked = (worker.clicked || 0) + 1; // Initialize if `clicked` is undefined
+        if(worker.clicked==15){
+            worker.status="Busy";
+        }
         await worker.save();
 
         res.status(200).json({ message: 'Call counter incremented' });
