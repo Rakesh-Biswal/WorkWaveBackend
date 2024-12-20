@@ -272,6 +272,8 @@ app.post('/api/workers', upload.single('photo'), async (req, res) => {
                         location,
                         latitude,   // Include latitude in the worker object
                         longitude,  // Include longitude in the worker object
+                        planType:"Live", // Include plan type in the worker object
+                        planLimit:15,
                     });
 
                     await newWorker.save();
@@ -339,9 +341,6 @@ app.post('/api/workers/:workerId/incrementCallCounter', async (req, res) => {
         }
 
         worker.clicked = (worker.clicked || 0) + 1; // Initialize if `clicked` is undefined
-        if(worker.clicked==15){
-            worker.status="Busy";
-        }
         await worker.save();
 
         res.status(200).json({ message: 'Call counter incremented' });
