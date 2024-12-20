@@ -371,6 +371,23 @@ app.get('/api/workers/:workerId', async (req, res) => {
 
 
 
+app.get('/expired-workers', async (req, res) => {
+    try {
+        const expiredWorkers = await Worker.find({ PlanType: 'Expired' });
+
+        if (!expiredWorkers) {
+            return res.status(404).json({ message: 'Expired Worker not found' });
+        }
+
+        res.status(200).json(expiredWorkers);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch workers' });
+    }
+});
+
+
+
 // Start the Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
