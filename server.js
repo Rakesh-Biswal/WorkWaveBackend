@@ -387,6 +387,29 @@ app.get('/expired-workers', async (req, res) => {
 });
 
 
+app.put('/recharge-worker/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { planLimit, clicked,planType } = req.body;
+
+        // Update worker's planLimit and clicked values
+        const updatedWorker = await Worker.findByIdAndUpdate(
+            id,
+            { planLimit, clicked,planType},
+            { new: true }
+        );
+
+        if (!updatedWorker) {
+            return res.status(404).json({ message: 'Worker not found' });
+        }
+
+        res.status(200).json({ message: 'Worker recharged successfully', worker: updatedWorker });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to recharge the worker' });
+    }
+});
+
 
 // Start the Server
 const PORT = process.env.PORT || 3000;
