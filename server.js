@@ -373,7 +373,7 @@ app.get('/api/workers/:workerId', async (req, res) => {
 
 app.get('/expired-workers', async (req, res) => {
     try {
-        const expiredWorkers = await Worker.find({ PlanType: 'Expired' });
+        const expiredWorkers = await Worker.find({ planType: 'Expired' });
 
         if (!expiredWorkers) {
             return res.status(404).json({ message: 'Expired Worker not found' });
